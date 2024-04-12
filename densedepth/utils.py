@@ -5,6 +5,18 @@ from PIL import Image
 
 import torch
 
+def evaluation(pred, gt):
+    average_relative_error = torch.mean( torch.abs(gt - pred) / gt )
+    root_mean_square = torch.sqrt( torch.mean( (gt - pred) ** 2 ) )
+    # 최종출력 픽셀이 0 혹은 음수가 나올 수 있으므로 clamp를 수행
+    log_rms = torch.mean( torch.abs( torch.log10( torch.clamp(gt, min=1e-6) ) - torch.log10( torch.clamp(pred, min=1e-6) ) ) )
+    
+    threshold = torch.max( torch.abs(gt / pred) , torch.abs(pred / gt) )
+    accuracy = torch.mean( (threshold < 1.25).float() )
+    accuracy2 = torch.mean( (threshold < 1.25 ** 2).float() )
+    accuracy3 = torch.mean( (threshold < 1.25 ** 3).float() )
+    
+    return average_relative_error, root_mean_square, log_rms, accuracy, accuracy2, accuracy3
 
 def DepthNorm(depth, max_depth=1000.0):
     return max_depth / depth

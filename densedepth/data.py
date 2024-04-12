@@ -166,16 +166,10 @@ def getDefaultTrainTransform():
 def getTrainingTestingData(path, batch_size):
     data, nyu2_train = loadZipToMem(path)
 
-    transformed_training = depthDatasetMemory(
-        data, nyu2_train, transform=getDefaultTrainTransform()
-    )
-    transformed_testing = depthDatasetMemory(
-        data, nyu2_train, transform=getNoTransform()
-    )
+    transformed_training = depthDatasetMemory(data, nyu2_train, transform=getDefaultTrainTransform())
+    transformed_testing = depthDatasetMemory(data, nyu2_train, transform=getNoTransform())
 
-    return DataLoader(transformed_training, batch_size, shuffle=True), DataLoader(
-        transformed_testing, batch_size, shuffle=False
-    )
+    return DataLoader(transformed_training, batch_size, shuffle=True), DataLoader(transformed_testing, batch_size, shuffle=False)
 
 
 def load_testloader(path, batch_size=1):
@@ -185,3 +179,50 @@ def load_testloader(path, batch_size=1):
         data, nyu2_train, transform=getNoTransform()
     )
     return DataLoader(transformed_testing, batch_size, shuffle=False)
+
+
+
+import h5py
+def DH_loadMatToMemory(mat_file):
+    # h5py를 사용하여 .mat 파일 로드
+    with h5py.File(mat_file, 'r') as file:
+        print(list(file.keys()))
+        images = np.array(file['images'])
+        depths = np.array(file['depths'])
+        # 데이터를 (이미지, 깊이) 튜플의 리스트로 변환
+        nyu2_train = [(i, i) for i in range(images.shape[0])] # 인덱스 사용
+    return {'images': images, 'depths': depths}, nyu2_train
+def DH_getTrainingTestingData(path, batch_size):
+    data, nyu2_train = DH_loadMatToMemory(path)
+
+    transformed_training = DH_depthDatasetMemory(
+        data, nyu2_train, transform=getDefaultTrainTransform()
+    )
+    transformed_testing = DH_depthDatasetMemory(
+        data, nyu2_train, transform=getNoTransform()
+    )
+
+    return DataLoader(transformed_training, batch_size, shuffle=True), DataLoader(
+        transformed_testing, batch_size, shuffle=False
+    )
+class DH_depthDatasetMemory(Dataset):
+    def __init__(self, data, nyu2_train, transform=None):
+        self.data, self.nyu_dataset = data, nyu2_train
+        self.transform = transform
+
+    def __getitem__(self, idx):
+        # 이미지와 깊이 인덱스를 가져옵니다.
+        image_idx, depth_idx = self.nyu_dataset[idx]
+        # 실제 이미지와 깊이 데이터를 로드합니다.
+        image = self.data['images'][image_idx, :, :, :]
+        depth = self.data['depths'][depth_idx, :, :]
+        # numpy 배열을 PIL 이미지로 변환
+        image = Image.fromarray(np.uint8(image.transpose(2, 1, 0)))
+        depth = Image.fromarray(np.uint8(depth.transpose(1, 0)))
+        sample = {"image": image, "depth": depth}
+        if self.transform:
+            sample = self.transform(sample)
+        return sample
+
+    def __len__(self):
+        return len(self.nyu_dataset)

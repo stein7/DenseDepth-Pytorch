@@ -8,7 +8,7 @@ class Encoder(nn.Module):
     def __init__(self, encoder_pretrained=True):
         super(Encoder, self).__init__()
         self.densenet = models.densenet161(pretrained=encoder_pretrained)
-
+        #models.densenet169 or models.densenet201
     def forward(self, x):
 
         feature_maps = [x]

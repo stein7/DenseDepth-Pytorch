@@ -67,6 +67,7 @@ def main():
     )
     parser.add_argument(
         "--data", default="data/nyu_data.zip", type=str, help="path to dataset"
+        #"--data", default="/home/sslunder0/project/NNPROJ/dataset/nyu_depth_v2_labeled.mat", type=str, help="path to dataset"
     )
     parser.add_argument(
         "--theta", "-t", default=0.1, type=float, help="coeff for L1 (depth) Loss"
@@ -87,6 +88,10 @@ def main():
 
     # Load data
     print("Loading Data ...")
+    #import data
+    #trainloader, testloader = data.DH_getTrainingTestingData(args.data, batch_size=args.batch)
+    #import DH_process_v2
+    #trainloader, testloader = DH_process_v2.DH_getTrainingTestingData(args.data, batch_size=args.batch)
     trainloader, testloader = getTrainingTestingData(args.data, batch_size=args.batch)
     print("Dataloaders ready ...")
     num_trainloader = len(trainloader)
