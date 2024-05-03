@@ -9,8 +9,9 @@ import torch.nn.utils as utils
 import torch.optim as optim
 import torchvision.utils as vision_utils
 from tensorboardX import SummaryWriter
-
-from model import DenseDepth
+import torchinfo
+#from model import DenseDepth
+from DH_model import DenseDepth
 from losses import ssim as ssim_criterion
 from losses import depth_loss as gradient_criterion
 from data import getTrainingTestingData
@@ -20,6 +21,7 @@ from utils import (
     colorize,
     load_from_checkpoint,
     init_or_load_model,
+    evaluation
 )
 
 

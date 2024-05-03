@@ -4,6 +4,8 @@ import matplotlib.cm as cm
 from PIL import Image
 
 import torch
+from torchvision import transforms
+##################################
 
 def evaluation(pred, gt):
     average_relative_error = torch.mean( torch.abs(gt - pred) / gt )
@@ -17,6 +19,60 @@ def evaluation(pred, gt):
     accuracy3 = torch.mean( (threshold < 1.25 ** 3).float() )
     
     return average_relative_error, root_mean_square, log_rms, accuracy, accuracy2, accuracy3
+
+def DH_scale_up(scale, image): #Depth: batch, 1, height, width
+    transform = transforms.Resize((image.shape[2] * scale, image.shape[3] * scale), antialias=True)
+    scaled = transform(image)
+    return scaled
+
+def DH_evaluation(pred, gt): # 1 batch case
+    thresh = torch.max( (gt / pred), (pred / gt) )
+    
+    acc1 = torch.mean((thresh < 1.25).float())
+    acc2 = torch.mean((thresh < 1.25 ** 2).float())
+    acc3 = torch.mean((thresh < 1.25 ** 3).float())
+    
+    abs_rel = torch.mean( torch.abs(gt - pred) / gt )
+    rmse = torch.sqrt(torch.mean( (gt - pred) ** 2))
+    log_rms = torch.mean( torch.abs(torch.log10(gt) - torch.log10(pred)) )
+    
+    return acc1, acc2, acc3, abs_rel, rmse, log_rms
+
+#################################
+def tensor_to_image(tensor):
+    from PIL import Image
+    if isinstance(tensor, torch.Tensor):
+        array = tensor.cpu().numpy()
+    elif isinstance(tensor, np.ndarray):
+        array = tensor
+        
+    if tensor.shape[0] == 3:
+        array = array * 255 # 0~1 -> 0~255
+        image = Image.fromarray(np.uint8(array.transpose(1, 2, 0))) # H, W, C
+        
+        return image
+    elif tensor.shape[0] == 1:
+        depth = Image.fromarray(np.uint8(array.squeeze(0)))
+        return depth  #image.save('output/rgb_image.png')
+    else:
+        depth = Image.fromarray(np.uint8(array))
+        return depth
+    #image = Image.fromarray(np.uint8(image.transpose(2, 1, 0)))
+    #depth = Image.fromarray(np.uint8(depth.transpose(1, 0)))
+        
+
+def image_to_tensor(image):
+    byte_image = torch.ByteTensor(torch.ByteStorage.from_buffer(image.tobytes()))
+    
+    if image.mode == 'RGB':
+        tensor = byte_image.view(3, image.size[1], image.size[0])
+    elif image.mode == 'L':
+        tensor = byte_image.view(image.size[1], image.size[0])
+        
+    return tensor
+
+
+
 
 def DepthNorm(depth, max_depth=1000.0):
     return max_depth / depth
